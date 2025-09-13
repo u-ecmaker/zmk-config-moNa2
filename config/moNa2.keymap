@@ -1,20 +1,83 @@
+// ======================= microBall / moNa2: 5 layers =========================
+// 方針: L0=Base(片手クリックはコンボ) / L1=Symbols(単打) / L2=Num+Nav / L3=Scroll / L4=Fn
+// ============================================================================
+
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/pointing.h>
 
+// ---- 基本設定（スクロール） ----
 #define ZMK_POINTING_DEFAULT_SCRL_VAL 100
-#define MOUSE 5
-#define SCROLL 6
 
+// ---- Hold-Tap（Mod-Tap）の味付け：誤爆減らすため tap-preferred へ ----
 &mt {
-    flavor = "balanced";
+    flavor = "tap-preferred";     // もともと balanced → タイピング寄りに
     quick-tap-ms = <0>;
 };
 
+// ---- 既存マクロ/挙動（必要なら活用） ----
 / {
-    combos { compatible = "zmk,combos"; };
+    // ----------------------- コンボ定義 -----------------------
+    // ※ key-positions は「配列中の並び順インデックス」。0,1,2... をあなたの配列で数えて置換してください。
+    combos {
+        compatible = "zmk,combos";
 
+        // 片手クリック（ベースで常時）：J+K=左 / K+L=右
+        combo_jk_lclk {
+            timeout-ms = <60>;
+            require-prior-idle-ms = <120>;
+            layers = <0>;
+            key-positions = <34 35>;    // <<< 例: J=34, K=35 に置換
+            bindings = <&mkp LCLK>;
+        };
+        combo_kl_rclick {
+            timeout-ms = <60>;
+            require-prior-idle-ms = <120>;
+            layers = <0>;
+            key-positions = <35 36>;    // <<< 例: K=35, L=36 に置換
+            bindings = <&mkp RCLK>;
+        };
+
+        // 矢印（ホームのまま）：U+I=↑ / H+J=← / J+L=→ / M+,=↓
+        combo_ui_up {
+            timeout-ms = <50>;
+            layers = <0>;
+            key-positions = <20 21>;    // <<< U, I
+            bindings = <&kp UP>;
+        };
+        combo_hj_left {
+            timeout-ms = <50>;
+            layers = <0>;
+            key-positions = <33 34>;    // <<< H, J
+            bindings = <&kp LEFT>;
+        };
+        combo_jl_right {
+            timeout-ms = <50>;
+            layers = <0>;
+            key-positions = <34 36>;    // <<< J, L
+            bindings = <&kp RIGHT>;
+        };
+        combo_m_comma_down {
+            timeout-ms = <50>;
+            layers = <0>;
+            key-positions = <44 45>;    // <<< M, COMMA
+            bindings = <&kp DOWN>;
+        };
+
+        // [ + ] で L3(Scroll) をモーメンタリ（両方離すと解除）
+        combo_brackets_scroll {
+            timeout-ms = <50>;
+            slow-release;
+            key-positions = <30 31>;    // <<< [, ]
+            bindings = <&mo 3>;
+        };
+
+        // Q+W=Esc のような定番も欲しければ追加
+        // combo_qw_esc { timeout-ms=<50>; key-positions=<0 1>; bindings=<&kp ESC>; };
+    };
+
+    // レイヤ0に戻る簡易マクロ（既存定義を残置）
     macros {
         to_layer_0: to_layer_0 {
             compatible = "zmk,behavior-macro-one-param";
@@ -24,102 +87,90 @@
         };
     };
 
+    // スクロール（回転センサ＝ホイール）
     behaviors {
+        // layer-tap to 0（必要なら使う）
         lt_to_layer_0: lt_to_layer_0 {
             compatible = "zmk,behavior-hold-tap";
             label = "LAYER_TAP_TO_0";
             bindings = <&mo>, <&to_layer_0>;
-
             #binding-cells = <2>;
             tapping-term-ms = <200>;
         };
 
+        // トラックボールの回転 → 上下スクロール
         scroll_up_down: behavior_sensor_rotate_mouse_wheel_up_down {
             compatible = "zmk,behavior-sensor-rotate";
             #sensor-binding-cells = <0>;
             bindings = <&msc SCRL_UP>, <&msc SCRL_DOWN>;
-
             tap-ms = <20>;
         };
     };
 
+    // =============================== キーマップ ===============================
     keymap {
         compatible = "zmk,keymap";
 
+        // ------------------------------ L0: Base ------------------------------
         default_layer {
             bindings = <
-&kp Q             &kp W         &kp E         &kp R             &kp T                                             &kp Y        &kp U  &lt 5 I    &kp O    &kp P
-&kp A             &kp S         &kp D         &kp F             &kp G                              &kp MINUS      &kp H        &kp J  &kp K      &kp L    &kp SQT
-&mt LEFT_SHIFT Z  &kp X         &kp C         &kp V             &kp B        &lt 4 COLON           &kp SEMICOLON  &kp N        &kp M  &kp COMMA  &kp DOT  &kp SLASH
-&kp LCTRL         &kp LEFT_WIN  &kp LEFT_ALT  &lt 1 INT_HENKAN  &lt 2 SPACE  &lt 3 INT_MUHENKAN    &kp BACKSPACE  &lt 1 ENTER                             &kp DEL
+&kp Q             &kp W         &kp E         &kp R             &kp T                                                 &kp Y       &kp U    &kp I       &kp O      &kp P
+&kp A             &kp S         &kp D         &kp F             &kp G                                   &kp MINUS     &kp H       &kp J    &kp K       &kp L      &kp SQT
+&mt LEFT_SHIFT Z  &kp X         &kp C         &kp V             &kp B        &lt 4 COLON                &kp SEMICOLON &kp N       &kp M    &kp COMMA   &kp DOT    &kp SLASH
+&kp LCTRL         &kp LEFT_GUI  &kp LEFT_ALT  &lt 1 LANG4       &lt 2 SPACE  &lt 3 LANG5                &kp BACKSPACE &lt 1 ENTER                                 &kp DEL
             >;
 
+            // 回転＝スクロール、左右スワイプ＝音量（必要なら）
             sensor-bindings =
                 <&scroll_up_down>,
                 <&inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
+        // --------------------------- L1: Symbols（単打） -----------------------
+        // プログラミング記号を Shift無しで直接
         layer_1 {
             bindings = <
-&trans  &trans  &trans  &trans  &trans                    &kp F1  &kp F2  &kp F3  &kp F4  &kp F5
-&trans  &trans  &trans  &trans  &trans            &trans  &kp F6  &kp F7  &kp F8  &kp F9  &kp F10
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans  &trans  &trans  &kp F11
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                          &kp F12
+&kp EXCLAMATION  &kp AT_SIGN    &kp HASH           &kp DOLLAR         &kp PERCENT                       &kp CARET     &kp AMPERSAND    &kp ASTERISK      &kp LEFT_PARENTHESIS   &kp RIGHT_PARENTHESIS
+&kp MINUS        &kp UNDERSCORE &kp EQUAL          &kp PLUS           &kp TILDE           &trans        &kp GRAVE     &kp BACKSLASH    &kp SLASH         &kp PIPE               &kp QUESTION
+&kp SQT          &kp DQT        &kp LESS_THAN      &kp GREATER_THAN   &kp BACKSLASH       &trans        &trans        &kp LEFT_BRACKET &kp RIGHT_BRACKET &kp LEFT_BRACE         &kp RIGHT_BRACE &trans
+&trans           &trans         &trans             &trans             &trans              &trans        &trans        &trans                                                    &trans
             >;
 
             sensor-bindings = <&scroll_up_down>;
         };
 
+        // ---------------- L2: Num+Nav（左=テンキー / 右=矢印+編集） ---------
         layer_2 {
             bindings = <
-&kp MINUS                   &kp KP_NUMBER_7  &kp KP_NUMBER_8  &kp KP_NUMBER_9  &kp PLUS                                                 &kp CARET         &kp AMPERSAND      &kp TILDE       &kp LEFT_PARENTHESIS  &kp RIGHT_PARENTHESIS
-&kp SLASH                   &kp KP_NUMBER_4  &kp KP_NUMBER_5  &kp KP_NUMBER_6  &kp ASTERISK                             &kp UNDERSCORE  &kp EXCLAMATION   &kp AT_SIGN        &kp HASH        &kp DOLLAR            &kp PERCENT
-&mt LEFT_SHIFT KP_NUMBER_0  &kp KP_NUMBER_1  &kp KP_NUMBER_2  &kp KP_NUMBER_3  &kp PERIOD    &kp EQUAL                  &trans          &kp LEFT_BRACKET  &kp RIGHT_BRACKET  &kp LEFT_BRACE  &kp RIGHT_BRACE       &kp BACKSLASH
-&trans                      &trans           &trans           &trans           &trans        &trans                     &trans          &trans                                                                     &kp PIPE
+&kp KP_NUMBER_7  &kp KP_NUMBER_8  &kp KP_NUMBER_9  &kp KP_DIVIDE   &kp KP_MULTIPLY                                 &kp HOME    &kp UP      &kp END     &kp PG_UP   &kp INS
+&kp KP_NUMBER_4  &kp KP_NUMBER_5  &kp KP_NUMBER_6  &kp KP_MINUS    &kp KP_PLUS                          &trans     &kp LEFT    &kp DOWN    &kp RIGHT   &kp PG_DN   &kp DEL
+&kp KP_NUMBER_1  &kp KP_NUMBER_2  &kp KP_NUMBER_3  &kp KP_DOT      &kp KP_EQUAL         &trans          &trans     &trans      &trans      &trans      &trans      &trans
+&trans           &trans           &trans           &trans          &kp KP_NUMBER_0      &kp KP_ENTER    &trans     &trans                              &trans
             >;
 
             sensor-bindings = <&scroll_up_down>;
         };
 
+        // ---------------------------- L3: Scroll 専用 --------------------------
+        // 縦/横を分離して割当（誤爆防止）。必要ならここにモード切替トグルも。
         layer_3 {
             bindings = <
-&kp ESCAPE      &kp LC(LS(TAB))         &kp UP_ARROW    &kp LC(TAB)              &trans                     &trans  &trans  &trans  &trans  &trans
-&kp HOME        &kp LEFT_ARROW          &kp DOWN_ARROW  &kp RIGHT_ARROW          &kp END            &trans  &trans  &trans  &trans  &trans  &trans
-&kp LEFT_SHIFT  &kp LG(LS(LEFT_ARROW))  &trans          &kp LG(LS(RIGHT_ARROW))  &trans   &trans    &trans  &trans  &trans  &trans  &trans  &trans
-&trans          &trans                  &trans          &trans                   &trans   &trans    &trans  &trans                          &trans
+&trans  &trans          &msc SCRL_UP     &trans           &trans                                                    &trans  &trans  &trans  &trans  &trans
+&trans  &msc SCRL_LEFT  &msc SCRL_DOWN   &msc SCRL_RIGHT  &trans                                        &trans      &trans  &trans  &trans  &trans  &trans
+&trans  &trans          &trans           &trans           &trans   &trans                               &trans      &trans  &trans  &trans  &trans  &trans
+&trans  &trans          &trans           &trans           &trans   &trans                               &trans      &trans                          &trans
             >;
 
             sensor-bindings = <&scroll_up_down>;
         };
 
+        // ----------------------------- L4: Fn/BT 等 ---------------------------
         layer_4 {
             bindings = <
-&trans  &trans  &trans  &trans  &trans                         &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4
-&trans  &trans  &trans  &trans  &trans            &trans       &trans        &trans        &trans        &trans        &trans
-&trans  &trans  &trans  &trans  &trans  &trans    &bootloader  &trans        &trans        &trans        &trans        &bt BT_CLR
-&trans  &trans  &trans  &trans  &trans  &trans    &trans       &trans                                                  &bt BT_CLR_ALL
-            >;
-
-            sensor-bindings = <&scroll_up_down>;
-        };
-
-        MOUSE {
-            bindings = <
-&trans  &trans  &trans  &trans  &trans                    &trans  &trans    &trans    &trans    &trans
-&trans  &trans  &trans  &trans  &trans            &trans  &trans  &mkp MB1  &mkp MB3  &mkp MB2  &trans
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans    &trans    &trans    &trans
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans
-            >;
-
-            sensor-bindings = <&scroll_up_down>;
-        };
-
-        SCROLL {
-            bindings = <
-&trans  &trans  &trans  &trans  &trans                    &trans  &trans    &trans    &trans    &trans
-&trans  &trans  &trans  &trans  &trans            &trans  &trans  &trans    &trans    &trans    &trans
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans  &trans    &trans    &trans    &trans
-&trans  &trans  &trans  &trans  &trans  &trans    &trans  &trans                                &trans
+&kp F1  &kp F2  &kp F3  &kp F4  &kp F5                                                                                &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4
+&kp F6  &kp F7  &kp F8  &kp F9  &kp F10                                                                 &trans        &trans        &trans        &trans        &trans        &trans
+&kp F11 &trans  &trans  &trans  &trans    &trans                                                        &bootloader   &trans        &trans        &trans        &trans        &bt BT_CLR
+&trans  &trans  &trans  &trans  &trans    &trans                                                        &trans        &trans                                                  &bt BT_CLR_ALL
             >;
 
             sensor-bindings = <&scroll_up_down>;
